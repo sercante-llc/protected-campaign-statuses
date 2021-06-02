@@ -14,6 +14,12 @@ public without sharing class SL_CampaignTriggerHandler {
 
 
         for(Campaign campaign : campaigns) {
+            System.debug('Checking to see if the idiot checked it before hand');
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
+                System.debug('yup they gone done and did it');
+                campaign.addError('Has_Protected_Campaign_Member_Statuses__c', 'Don\'t check this box silly');
+                continue;
+            }
             System.debug('Checking to see if ' + campaign.Name + ' has Protected Member Statuses');
             if(groupedProtectedStatuses.containsKey(campaign.Type)) {
                 System.debug('This campaign does have Protected Member Statuses, checking the box');
