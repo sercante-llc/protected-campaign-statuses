@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Has_Protected_Campaign_Member_Statuses__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Used to mark a Campaign as having Protected Campaign Member Statuses, therefore applying APEX validation to Campaign Member Statuses.</description>
+    <externalId>false</externalId>
+    <label>Has Protected Campaign Member Statuses</label>
+    <type>Checkbox</type>
+</CustomField>
