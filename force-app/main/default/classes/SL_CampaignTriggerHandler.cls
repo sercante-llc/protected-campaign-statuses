@@ -27,4 +27,19 @@ public without sharing class SL_CampaignTriggerHandler {
             }
         }
     }
+
+    public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
+        for(Campaign campaign : newValues) {
+            Campaign oldCampaign = oldValues.get(campaign.Id);
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c && (campaign.Type != oldCampaign.Type)) {
+                System.debug('Someone tried to change the Type of a Campaign with Has_Protected_Campaign_Member_Statuses__c');
+                campaign.addError('Type','Campaign has Protected Campaign Member Statuses. Don\'t change the type.');
+            }
+
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c == true && !oldCampaign.Has_Protected_Campaign_Member_Statuses__c) {
+                System.debug('Someone tried to re-enable Protected Campaign Member Statuses. We are not equipped to do that so we are preventing it');
+                campaign.addError('Has_Protected_Campaign_Member_Statuses__c','Once disabled, cannot be re-enabled.');
+            }
+        }
+    }
 }
