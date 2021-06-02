@@ -26,3 +26,6 @@ Thumbs.db
 ehthumbs.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
+
+# Actual Custom Metadata. Remove this if you are cloning the repo and wanting to save it
+force-app/main/default/customMetadata
