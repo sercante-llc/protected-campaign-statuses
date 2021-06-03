@@ -17,6 +17,96 @@ public without sharing class SL_CampaignTriggerHandler {
         }
     }
 
+    public static void onAfterInsert(List<Campaign> campaigns) {
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = getGroupedProtectedStatuses();
+        List<Id> campaignIdsNeedingStatuses = new List<Id>();
+        for(Campaign campaign : campaigns) {
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
+                campaignIdsNeedingStatuses.add(campaign.Id);
+            }
+        }
+        
+        if(campaignIdsNeedingStatuses.isEmpty()) return;
+        System.debug('We need to process ' + campaignIdsNeedingStatuses.size() + ' Campaigns to have Protected statuses');
+
+        //get our DML lists ready
+        List<CampaignMemberStatus> toUpsert = new List<CampaignMemberStatus>();
+        List<CampaignMemberStatus> toDelete = new List<CampaignMemberStatus>();
+        Map<Id, List<CampaignMemberStatus>> existingStatuses = getGroupedCampaignMemberStatusesByCampaignId(campaignIdsNeedingStatuses);
+
+        for(Campaign campaign : campaigns) {
+            System.debug('Campaign ' + campaign.Name + '\' type is one that should have Protected statuses');
+            List<CampaignMemberStatus> cmsList = existingStatuses.get(campaign.Id);
+            System.debug('There are ' + cmsList.size() + ' existing CampaignMemberStatus records for the Campaign');
+
+            //first lets see if the default status matches
+            CampaignMemberStatus existingSent = null;
+            CampaignMemberStatus existingDefault = null;
+            if(cmsList.get(0).IsDefault) {
+                existingDefault=cmsList.get(0);
+                existingSent=cmsList.get(1);
+            }
+            else {
+                existingDefault=cmsList.get(1);
+                existingSent=cmsList.get(0);
+            }
+
+            List<Protected_Campaign_Status__mdt> expectedStatuses = groupedProtectedStatuses.get(campaign.Type);
+            if(expectedStatuses.size()==1) {
+                System.debug('There is only 1 expected CampaignMemberStatus, so it is easy to set this up');
+                existingDefault.HasResponded = true;
+                existingDefault.Label = expectedStatuses.get(0).New_Campaign_Member_Status__c;
+                toUpsert.add(existingDefault);
+                toDelete.add(existingSent);
+            }
+            else {
+                System.debug('There is more than 1 expected CampaignMemberStatus, so we need to figure things out');
+                //First, process the Default Status
+                Boolean processedSent = false;
+                Integer sortOrder=3;
+                for(Protected_Campaign_Status__mdt expected: expectedStatuses) {
+                    System.debug('Checking to see what we need to do with expected status of ' + expected.Label);
+                    if(expected.Is_Default__c) {
+                        System.debug('It is the default status, updating the system-generated default status to match');
+                        existingDefault.Label = expected.New_Campaign_Member_Status__c;
+                        existingDefault.HasResponded = expected.Is_Responded__c;
+
+                        System.debug(existingDefault);
+                        toUpsert.add(existingDefault);
+                    }
+                    else {
+                        System.debug('It is not the default status, checking to see what we need to do');
+                        if(!processedSent) {
+                            System.debug('We will update the existing Sent status to match');
+                            existingSent.Label = expected.New_Campaign_Member_Status__c;
+                            existingSent.HasResponded = expected.Is_Responded__c;
+                            
+                            System.debug(existingSent);
+                            toUpsert.add(existingSent);
+                            processedSent = true;
+                        }
+                        else {
+                            System.debug('We need to create a new Status');
+                            CampaignMemberStatus newStatus = new CampaignMemberStatus(
+                                CampaignId=campaign.Id, 
+                                Label=expected.New_Campaign_Member_Status__c,
+                                HasResponded=expected.Is_Responded__c,
+                                SortOrder=sortOrder++);
+                            
+                                System.debug(newStatus);
+                            toUpsert.add(newStatus);
+                        }
+                    }
+                }
+            }
+        }
+
+        System.debug('We are upserting ' + toUpsert.size() + ' Statuses, and deleting ' + toDelete.size() + ' statuses');
+        upsert toUpsert;
+        if(!toDelete.isEmpty())
+            delete toDelete;
+    }
+
     public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
         for(Campaign campaign : newValues) {
             Campaign oldCampaign = oldValues.get(campaign.Id);
@@ -34,7 +124,7 @@ public without sharing class SL_CampaignTriggerHandler {
 
     private static Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
         List<Protected_Campaign_Status__mdt> protectedStatuses = [
-            SELECT Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
+            SELECT Label, Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
             FROM Protected_Campaign_Status__mdt];
 
         Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
@@ -45,5 +135,19 @@ public without sharing class SL_CampaignTriggerHandler {
             groupedProtectedStatuses.get(status.Campaign_Type__c).add(status);
         }
         return groupedProtectedStatuses;
+    }
+
+    private static Map<Id, List<CampaignMemberStatus>> getGroupedCampaignMemberStatusesByCampaignId(List<Id> campaignIds) {
+        List<CampaignMemberStatus> statusesInDb = [
+            SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder
+            FROM CampaignMemberStatus
+            WHERE CampaignId IN :campaignIds];
+        Map<Id, List<CampaignMemberStatus>> statusesByCampaignId = new Map<Id, List<CampaignMemberStatus>>();
+        for(CampaignMemberStatus status : statusesInDb) {
+            if(!statusesByCampaignId.containsKey(status.CampaignId)) 
+                statusesByCampaignId.put(status.CampaignId, new List<CampaignMemberStatus>());
+            statusesByCampaignId.get(status.CampaignId).add(status);
+        }
+        return statusesByCampaignId;
     }
 }
