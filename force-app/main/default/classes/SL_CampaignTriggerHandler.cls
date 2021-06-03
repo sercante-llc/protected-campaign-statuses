@@ -17,21 +17,6 @@ public without sharing class SL_CampaignTriggerHandler {
         }
     }
 
-    private static Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-        List<Protected_Campaign_Status__mdt> protectedStatuses = [
-            SELECT Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
-            FROM Protected_Campaign_Status__mdt];
-
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
-        for(Protected_Campaign_Status__mdt status : protectedStatuses) {
-            if(!groupedProtectedStatuses.containsKey(status.Campaign_Type__c)) {
-                groupedProtectedStatuses.put(status.Campaign_Type__c, new List<Protected_Campaign_Status__mdt>());
-            }
-            groupedProtectedStatuses.get(status.Campaign_Type__c).add(status);
-        }
-        return groupedProtectedStatuses;
-    }
-
     public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
         for(Campaign campaign : newValues) {
             Campaign oldCampaign = oldValues.get(campaign.Id);
@@ -45,5 +30,20 @@ public without sharing class SL_CampaignTriggerHandler {
                 campaign.addError('Has_Protected_Campaign_Member_Statuses__c','Once disabled, cannot be re-enabled.');
             }
         }
+    }
+
+    private static Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
+        List<Protected_Campaign_Status__mdt> protectedStatuses = [
+            SELECT Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
+            FROM Protected_Campaign_Status__mdt];
+
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
+        for(Protected_Campaign_Status__mdt status : protectedStatuses) {
+            if(!groupedProtectedStatuses.containsKey(status.Campaign_Type__c)) {
+                groupedProtectedStatuses.put(status.Campaign_Type__c, new List<Protected_Campaign_Status__mdt>());
+            }
+            groupedProtectedStatuses.get(status.Campaign_Type__c).add(status);
+        }
+        return groupedProtectedStatuses;
     }
 }
