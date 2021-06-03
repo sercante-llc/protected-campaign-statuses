@@ -30,7 +30,8 @@ public without sharing class SL_CampaignTriggerHandler {
         System.debug('We need to process ' + campaignIdsNeedingStatuses.size() + ' Campaigns to have Protected statuses');
 
         //get our DML lists ready
-        List<CampaignMemberStatus> toUpsert = new List<CampaignMemberStatus>();
+        List<CampaignMemberStatus> toUpdate = new List<CampaignMemberStatus>();
+        List<CampaignMemberStatus> toInsert = new List<CampaignMemberStatus>();
         List<CampaignMemberStatus> toDelete = new List<CampaignMemberStatus>();
         Map<Id, List<CampaignMemberStatus>> existingStatuses = getGroupedCampaignMemberStatusesByCampaignId(campaignIdsNeedingStatuses);
 
@@ -40,24 +41,33 @@ public without sharing class SL_CampaignTriggerHandler {
             System.debug('There are ' + cmsList.size() + ' existing CampaignMemberStatus records for the Campaign');
 
             //first lets see if the default status matches
-            CampaignMemberStatus existingSent = null;
+            CampaignMemberStatus existingResponded = null;
             CampaignMemberStatus existingDefault = null;
             if(cmsList.get(0).IsDefault) {
                 existingDefault=cmsList.get(0);
-                existingSent=cmsList.get(1);
+                existingResponded=cmsList.get(1);
             }
             else {
                 existingDefault=cmsList.get(1);
-                existingSent=cmsList.get(0);
+                existingResponded=cmsList.get(0);
             }
 
             List<Protected_Campaign_Status__mdt> expectedStatuses = groupedProtectedStatuses.get(campaign.Type);
             if(expectedStatuses.size()==1) {
                 System.debug('There is only 1 expected CampaignMemberStatus, so it is easy to set this up');
-                existingDefault.HasResponded = true;
-                existingDefault.Label = expectedStatuses.get(0).New_Campaign_Member_Status__c;
-                toUpsert.add(existingDefault);
-                toDelete.add(existingSent);
+                CampaignMemberStatus desiredRecord = existingDefault;
+                CampaignMemberStatus deletedRecord = existingResponded;
+
+                if(expectedStatuses.get(0).New_Campaign_Member_Status__c == 'Responded') {
+                    desiredRecord = existingResponded;
+                    desiredRecord.IsDefault = true;
+
+                    deletedRecord = existingDefault;
+                }
+                desiredRecord.HasResponded = true;
+                desiredRecord.Label = expectedStatuses.get(0).New_Campaign_Member_Status__c;
+                toUpdate.add(desiredRecord);
+                toDelete.add(deletedRecord);
             }
             else {
                 System.debug('There is more than 1 expected CampaignMemberStatus, so we need to figure things out');
@@ -72,17 +82,17 @@ public without sharing class SL_CampaignTriggerHandler {
                         existingDefault.HasResponded = expected.Is_Responded__c;
 
                         System.debug(existingDefault);
-                        toUpsert.add(existingDefault);
+                        toUpdate.add(existingDefault);
                     }
                     else {
                         System.debug('It is not the default status, checking to see what we need to do');
                         if(!processedSent) {
                             System.debug('We will update the existing Sent status to match');
-                            existingSent.Label = expected.New_Campaign_Member_Status__c;
-                            existingSent.HasResponded = expected.Is_Responded__c;
+                            existingResponded.Label = expected.New_Campaign_Member_Status__c;
+                            existingResponded.HasResponded = expected.Is_Responded__c;
                             
-                            System.debug(existingSent);
-                            toUpsert.add(existingSent);
+                            System.debug(existingResponded);
+                            toUpdate.add(existingResponded);
                             processedSent = true;
                         }
                         else {
@@ -94,17 +104,25 @@ public without sharing class SL_CampaignTriggerHandler {
                                 SortOrder=sortOrder++);
                             
                                 System.debug(newStatus);
-                            toUpsert.add(newStatus);
+                            toInsert.add(newStatus);
                         }
                     }
                 }
             }
         }
 
-        System.debug('We are upserting ' + toUpsert.size() + ' Statuses, and deleting ' + toDelete.size() + ' statuses');
-        upsert toUpsert;
-        if(!toDelete.isEmpty())
+        if(!toUpdate.isEmpty()) {
+            System.debug('We are updating ' + toUpdate.size() + ' Status records');
+            update toUpdate;
+        }
+        if(!toInsert.isEmpty()) {
+            System.debug('We are inserting ' + toInsert.size() + ' Status records');
+            insert toInsert;
+        }
+        if(!toDelete.isEmpty()) {
+            System.debug('We are deleting ' + toDelete.size() + ' Status records');
             delete toDelete;
+        }
     }
 
     public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
