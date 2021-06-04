@@ -43,14 +43,8 @@ public without sharing class SL_CampaignTriggerHandler {
             //first lets see if the default status matches
             CampaignMemberStatus existingResponded = null;
             CampaignMemberStatus existingDefault = null;
-            if(cmsList.get(0).IsDefault) {
-                existingDefault=cmsList.get(0);
-                existingResponded=cmsList.get(1);
-            }
-            else {
-                existingDefault=cmsList.get(1);
-                existingResponded=cmsList.get(0);
-            }
+            existingDefault=cmsList.get(0); //Salesforce Generates 2 by default. the cmsList is sorted DESC by IsDefault field
+            existingResponded=cmsList.get(1);
 
             List<Protected_Campaign_Status__mdt> expectedStatuses = groupedProtectedStatuses.get(campaign.Type);
             if(expectedStatuses.size()==1) {
@@ -126,6 +120,7 @@ public without sharing class SL_CampaignTriggerHandler {
     }
 
     public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
+        System.debug('onBeforeUpdate?');
         for(Campaign campaign : newValues) {
             Campaign oldCampaign = oldValues.get(campaign.Id);
             if(campaign.Has_Protected_Campaign_Member_Statuses__c && (campaign.Type != oldCampaign.Type)) {
@@ -143,7 +138,8 @@ public without sharing class SL_CampaignTriggerHandler {
     private static Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
         List<Protected_Campaign_Status__mdt> protectedStatuses = [
             SELECT Label, Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
-            FROM Protected_Campaign_Status__mdt];
+            FROM Protected_Campaign_Status__mdt
+            ORDER BY Campaign_Type__c, Is_Default__c DESC, Is_Responded__c DESC];
 
         Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
         for(Protected_Campaign_Status__mdt status : protectedStatuses) {
@@ -159,7 +155,8 @@ public without sharing class SL_CampaignTriggerHandler {
         List<CampaignMemberStatus> statusesInDb = [
             SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder
             FROM CampaignMemberStatus
-            WHERE CampaignId IN :campaignIds];
+            WHERE CampaignId IN :campaignIds
+            ORDER BY IsDefault DESC];
         Map<Id, List<CampaignMemberStatus>> statusesByCampaignId = new Map<Id, List<CampaignMemberStatus>>();
         for(CampaignMemberStatus status : statusesInDb) {
             if(!statusesByCampaignId.containsKey(status.CampaignId)) 
