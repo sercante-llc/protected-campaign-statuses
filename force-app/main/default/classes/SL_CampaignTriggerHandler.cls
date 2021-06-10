@@ -48,18 +48,19 @@ public without sharing class SL_CampaignTriggerHandler {
 
             List<Protected_Campaign_Status__mdt> expectedStatuses = groupedProtectedStatuses.get(campaign.Type);
             if(expectedStatuses.size()==1) {
+                Protected_Campaign_Status__mdt expectedStatus = expectedStatuses.get(0);
                 System.debug('There is only 1 expected CampaignMemberStatus, so it is easy to set this up');
                 CampaignMemberStatus desiredRecord = existingDefault;
                 CampaignMemberStatus deletedRecord = existingResponded;
 
-                if(expectedStatuses.get(0).New_Campaign_Member_Status__c == 'Responded') {
+                if(expectedStatus.New_Campaign_Member_Status__c == 'Responded') {
                     desiredRecord = existingResponded;
                     desiredRecord.IsDefault = true;
 
                     deletedRecord = existingDefault;
                 }
                 desiredRecord.HasResponded = true;
-                desiredRecord.Label = expectedStatuses.get(0).New_Campaign_Member_Status__c;
+                desiredRecord.Label = expectedStatus.New_Campaign_Member_Status__c;
                 toUpdate.add(desiredRecord);
                 toDelete.add(deletedRecord);
             }
