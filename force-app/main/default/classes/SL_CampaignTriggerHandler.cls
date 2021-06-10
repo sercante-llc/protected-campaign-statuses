@@ -1,6 +1,6 @@
 public without sharing class SL_CampaignTriggerHandler {
     public static void onBeforeInsert(List<Campaign> campaigns) {
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = getGroupedProtectedStatuses();
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = SL_ProtectedCampaignService.getGroupedProtectedStatuses();
 
         for(Campaign campaign : campaigns) {
             System.debug('Checking to see if the idiot checked it before hand');
@@ -18,7 +18,7 @@ public without sharing class SL_CampaignTriggerHandler {
     }
 
     public static void onAfterInsert(List<Campaign> campaigns) {
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = getGroupedProtectedStatuses();
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = SL_ProtectedCampaignService.getGroupedProtectedStatuses();
         List<Id> campaignIdsNeedingStatuses = new List<Id>();
         for(Campaign campaign : campaigns) {
             if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
@@ -33,7 +33,7 @@ public without sharing class SL_CampaignTriggerHandler {
         List<CampaignMemberStatus> toUpdate = new List<CampaignMemberStatus>();
         List<CampaignMemberStatus> toInsert = new List<CampaignMemberStatus>();
         List<CampaignMemberStatus> toDelete = new List<CampaignMemberStatus>();
-        Map<Id, List<CampaignMemberStatus>> existingStatuses = getGroupedCampaignMemberStatusesByCampaignId(campaignIdsNeedingStatuses);
+        Map<Id, List<CampaignMemberStatus>> existingStatuses = SL_ProtectedCampaignService.getGroupedCampaignMemberStatusesByCampaignId(campaignIdsNeedingStatuses);
 
         for(Campaign campaign : campaigns) {
             System.debug('Campaign ' + campaign.Name + '\' type is one that should have Protected statuses');
@@ -133,36 +133,5 @@ public without sharing class SL_CampaignTriggerHandler {
                 campaign.addError('Has_Protected_Campaign_Member_Statuses__c','Once disabled, cannot be re-enabled.');
             }
         }
-    }
-
-    private static Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-        List<Protected_Campaign_Status__mdt> protectedStatuses = [
-            SELECT Label, Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
-            FROM Protected_Campaign_Status__mdt
-            ORDER BY Campaign_Type__c, Is_Default__c DESC, Is_Responded__c DESC];
-
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
-        for(Protected_Campaign_Status__mdt status : protectedStatuses) {
-            if(!groupedProtectedStatuses.containsKey(status.Campaign_Type__c)) {
-                groupedProtectedStatuses.put(status.Campaign_Type__c, new List<Protected_Campaign_Status__mdt>());
-            }
-            groupedProtectedStatuses.get(status.Campaign_Type__c).add(status);
-        }
-        return groupedProtectedStatuses;
-    }
-
-    private static Map<Id, List<CampaignMemberStatus>> getGroupedCampaignMemberStatusesByCampaignId(List<Id> campaignIds) {
-        List<CampaignMemberStatus> statusesInDb = [
-            SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder
-            FROM CampaignMemberStatus
-            WHERE CampaignId IN :campaignIds
-            ORDER BY IsDefault DESC];
-        Map<Id, List<CampaignMemberStatus>> statusesByCampaignId = new Map<Id, List<CampaignMemberStatus>>();
-        for(CampaignMemberStatus status : statusesInDb) {
-            if(!statusesByCampaignId.containsKey(status.CampaignId)) 
-                statusesByCampaignId.put(status.CampaignId, new List<CampaignMemberStatus>());
-            statusesByCampaignId.get(status.CampaignId).add(status);
-        }
-        return statusesByCampaignId;
     }
 }
