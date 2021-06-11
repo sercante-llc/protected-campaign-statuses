@@ -4,6 +4,7 @@ private class SL_ProtectedCampaignServiceTest {
     @isTest(seeAllData=true)
     static void shouldEnforceProtectedStatusesForCampaign() {
         //arrange
+        Test.enableChangeDataCapture();
         SL_ProtectedCampaignService sut = SL_ProtectedCampaignService.getInstance();
         sut.repo = new SL_WebinarMock();
 
@@ -11,29 +12,27 @@ private class SL_ProtectedCampaignServiceTest {
             Name='MyTest', 
             Type='Webinar',
             IsActive=true);
+        insert campaign;
+        Test.getEventBus().deliver(); //clear the bus so that we later get Update events
 
         //act
         Test.startTest();
-            insert campaign;
+            System.debug('start of test');
+            
+            //here we mess up our data
+            delete [SELECT Id FROM CampaignMemberStatus WHERE Label='3Watched On Demand'];
+            CampaignMemberStatus registered =  [SELECT Id FROM CampaignMemberStatus WHERE Label='1Registered'];
+            registered.HasResponded=true;
+            update registered;
         Test.stopTest();
-        System.debug('start of test');
-        
-        //here we mess up our data
-        delete [SELECT Id FROM CampaignMemberStatus WHERE Label='3Watched On Demand'];
-        CampaignMemberStatus registered =  [SELECT Id FROM CampaignMemberStatus WHERE Label='1Registered'];
-        registered.HasResponded=true;
-        update registered;
-        System.assertEquals(3, [SELECT ID FROM CampaignMemberStatus WHERE CampaignId = :campaign.Id].size());
-        //we are bypassing ChangeDataCapture for this test
-        sut.enforceProtectedStatusesForCampaigns(sut.getCampaignsNeedingToBeFixed());
 
         //assert
         List<CampaignMemberStatus> results = [SELECT Id, Label, IsDefault, HasResponded FROM CampaignMemberStatus WHERE CampaignId = :campaign.Id ORDER BY Label];
         System.assertEquals('1Registered', results.get(0).Label);
+        System.assertEquals(false, results.get(0).HasResponded);
         System.assertEquals('2Attended', results.get(1).Label);
         System.assertEquals('3Watched On Demand', results.get(2).Label);
         System.assertEquals('4Did Not Attend', results.get(3).Label);
-
     }
 
     private class SL_WebinarMock extends SL_ProtectedCampaignRepository {
