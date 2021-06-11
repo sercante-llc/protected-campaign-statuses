@@ -24,6 +24,7 @@ private class SL_ProtectedCampaignServiceTest {
             CampaignMemberStatus registered =  [SELECT Id FROM CampaignMemberStatus WHERE Label='1Registered'];
             registered.HasResponded=true;
             update registered;
+            System.assert(sut.getCampaignsNeedingToBeFixed().contains(campaign.Id));
         Test.stopTest();
 
         //assert
