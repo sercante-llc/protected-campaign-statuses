@@ -1,6 +1,22 @@
 public without sharing class SL_CampaignTriggerHandler {
-    public static void onBeforeInsert(List<Campaign> campaigns) {
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = SL_ProtectedCampaignService.getGroupedProtectedStatuses();
+    private static SL_CampaignTriggerHandler instance;
+    private SL_ProtectedCampaignService protectedCampaignService;
+
+    public static SL_CampaignTriggerHandler getInstance() {
+        if(instance==null) instance = new SL_CampaignTriggerHandler();
+        return instance;
+    }
+
+    public SL_CampaignTriggerHandler() {
+        this.protectedCampaignService = new SL_ProtectedCampaignService();
+    }
+
+    public SL_CampaignTriggerHandler(SL_ProtectedCampaignService service) {
+        this.protectedCampaignService = service;
+    }
+
+    public void onBeforeInsert(List<Campaign> campaigns) {
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = protectedCampaignService.getGroupedProtectedStatuses();
 
         for(Campaign campaign : campaigns) {
             System.debug('Checking to see if the idiot checked it before hand');
@@ -17,9 +33,9 @@ public without sharing class SL_CampaignTriggerHandler {
         }
     }
 
-    public static void onAfterInsert(List<Campaign> campaigns) {
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = SL_ProtectedCampaignService.getGroupedProtectedStatuses();
-        List<Id> campaignIdsNeedingStatuses = new List<Id>();
+    public void onAfterInsert(List<Campaign> campaigns) {
+        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = protectedCampaignService.getGroupedProtectedStatuses();
+        Set<Id> campaignIdsNeedingStatuses = new Set<Id>();
         for(Campaign campaign : campaigns) {
             if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
                 campaignIdsNeedingStatuses.add(campaign.Id);
@@ -33,11 +49,11 @@ public without sharing class SL_CampaignTriggerHandler {
         List<CampaignMemberStatus> toUpdate = new List<CampaignMemberStatus>();
         List<CampaignMemberStatus> toInsert = new List<CampaignMemberStatus>();
         List<CampaignMemberStatus> toDelete = new List<CampaignMemberStatus>();
-        Map<Id, List<CampaignMemberStatus>> existingStatuses = SL_ProtectedCampaignService.getGroupedCampaignMemberStatusesByCampaignId(campaignIdsNeedingStatuses);
+        List<Campaign> campaignsToProcess = protectedCampaignService.getCampaignsWithMemberStatuses(campaignIdsNeedingStatuses);
 
-        for(Campaign campaign : campaigns) {
-            System.debug('Campaign ' + campaign.Name + '\' type is one that should have Protected statuses');
-            List<CampaignMemberStatus> cmsList = existingStatuses.get(campaign.Id);
+        for(Campaign campaign : campaignsToProcess) {
+            System.debug('Campaign ' + campaign.Name + '\'s type is one that should have Protected statuses');
+            List<CampaignMemberStatus> cmsList = campaign.CampaignMemberStatuses;
             System.debug('There are ' + cmsList.size() + ' existing CampaignMemberStatus records for the Campaign');
 
             //first lets see if the default status matches
@@ -120,7 +136,7 @@ public without sharing class SL_CampaignTriggerHandler {
         }
     }
 
-    public static void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
+    public void onBeforeUpdate(List<Campaign> newValues, Map<Id, Campaign> oldValues) {
         System.debug('onBeforeUpdate?');
         for(Campaign campaign : newValues) {
             Campaign oldCampaign = oldValues.get(campaign.Id);

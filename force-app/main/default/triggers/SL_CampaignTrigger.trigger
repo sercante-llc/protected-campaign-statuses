@@ -1,15 +1,16 @@
 trigger SL_CampaignTrigger on Campaign (before insert, after insert, before update) {
+    SL_CampaignTriggerHandler handler = SL_CampaignTriggerHandler.getInstance();
     if(Trigger.isBefore) {
         if(Trigger.isInsert) {
-            SL_CampaignTriggerHandler.onBeforeInsert(Trigger.new);
+            handler.onBeforeInsert(Trigger.new);
         }
         else if(Trigger.isUpdate) {
-            SL_CampaignTriggerHandler.onBeforeUpdate(Trigger.new, Trigger.oldMap);
+            handler.onBeforeUpdate(Trigger.new, Trigger.oldMap);
         }
     }
     else {
         if(Trigger.isInsert) {
-            SL_CampaignTriggerHandler.onAfterInsert(Trigger.new);
+            handler.onAfterInsert(Trigger.new);
         }
     }
 }
