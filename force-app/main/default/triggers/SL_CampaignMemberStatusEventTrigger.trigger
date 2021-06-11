@@ -1,6 +1,6 @@
 trigger SL_CampaignMemberStatusEventTrigger on CampaignMemberStatusChangeEvent (after insert) {
     System.debug('We are processing Change events');
-    List<Id> campaignMemberIds = new List<Id>();
+    Set<Id> campaignMemberIds = new Set<Id>();
 
     for(CampaignMemberStatusChangeEvent event : Trigger.new) {
         EventBus.ChangeEventHeader header = event.ChangeEventHeader;
@@ -9,12 +9,16 @@ trigger SL_CampaignMemberStatusEventTrigger on CampaignMemberStatusChangeEvent (
             List<String> changedFields = header.changedfields; // list of fields updated
             System.debug('Update details: ');
             System.debug(event);
-            campaignMemberIds.addAll(header.getRecordIds());
+            for(String recordId : header.getRecordIds()) {
+                campaignMemberIds.add(Id.valueOf(recordId));
+            }
         }
-        else if(header.changetype == 'DELETE'){
-            System.debug('Delete details: ');
-            System.debug(event);
-            campaignMemberIds.addAll(header.getRecordIds());
+    }
+    if(!campaignMemberIds.isEmpty()) {
+        Set<Id> campaignIds = new Set<Id>();
+        for(CampaignMemberStatus a : [SELECT CampaignId FROM CampaignMemberStatus WHERE Id IN :campaignMemberIds]) {
+            campaignIds.add(a.CampaignId);
         }
+        SL_ProtectedCampaignService.getInstance().enforceProtectedStatusesForCampaigns(campaignIds);
     }
 }
