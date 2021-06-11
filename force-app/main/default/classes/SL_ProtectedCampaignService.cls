@@ -1,29 +1,22 @@
+/***
+ * Some reusable logic for this solution
+ */
 public without sharing class SL_ProtectedCampaignService {
+    //singleton pattern
     private static SL_ProtectedCampaignService instance;
+    @TestVisible
+    private SL_ProtectedCampaignRepository repo;
 
     public static SL_ProtectedCampaignService getInstance() {
-        if(instance==null) instance = new SL_ProtectedCampaignService();
+        if(instance==null) {
+            System.debug('creating new instance of SL_ProtectedCampaignService');
+            instance = new SL_ProtectedCampaignService();
+            instance.repo = new SL_ProtectedCampaignRepository(); 
+        }
         return instance;
     }
 
-    public SL_ProtectedCampaignService() {
-    }
-
-    public Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-        List<Protected_Campaign_Status__mdt> protectedStatuses = [
-            SELECT Label, Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
-            FROM Protected_Campaign_Status__mdt
-            ORDER BY Campaign_Type__c, Is_Default__c DESC, Is_Responded__c DESC];
-
-        Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = new Map<String, List<Protected_Campaign_Status__mdt>>();
-        for(Protected_Campaign_Status__mdt status : protectedStatuses) {
-            if(!groupedProtectedStatuses.containsKey(status.Campaign_Type__c)) {
-                groupedProtectedStatuses.put(status.Campaign_Type__c, new List<Protected_Campaign_Status__mdt>());
-            }
-            groupedProtectedStatuses.get(status.Campaign_Type__c).add(status);
-        }
-        return groupedProtectedStatuses;
-    }
+    private SL_ProtectedCampaignService() { }
 
     public List<Campaign> getCampaignsWithMemberStatuses(Set<Id> campaignIds) {
         System.debug('Start getCampaignsWithMemberStatuses');
@@ -38,17 +31,23 @@ public without sharing class SL_ProtectedCampaignService {
             AND Has_Protected_Campaign_Member_Statuses__c = true
         ];
     }
+    public virtual Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
+        return repo.getGroupedProtectedStatuses();
+    }
 
     public Set<Id> getCampaignsNeedingToBeFixed() {
+        System.debug('looking for Campaigns that might need to be fixed');
         Set<Id> campaignIdsNeedingFixes = new Set<Id>();
-        Map<String, List<Protected_Campaign_Status__mdt>> protectedStatuses = getGroupedProtectedStatuses();
+        Map<String, List<Protected_Campaign_Status__mdt>> protectedStatuses = repo.getGroupedProtectedStatuses();
 
         for(String type : protectedStatuses.keySet()) {
+            System.debug('Checking campaigns of type ' + type);
             List<String> expectedLabels = new List<String>();
             for(Protected_Campaign_Status__mdt expectedStatus : protectedStatuses.get(type)) {
                 expectedLabels.add(expectedStatus.New_Campaign_Member_Status__c);
             }
 
+            System.debug('expecting ' + expectedLabels.size() + ' specific Statuses');
             List<AggregateResult> groupedResults = [
                 SELECT CampaignId, Count(Id)
                 FROM CampaignMemberStatus
@@ -67,7 +66,7 @@ public without sharing class SL_ProtectedCampaignService {
                 campaignIdsNeedingFixes.add((Id)ar.get('CampaignId'));
             }
         }
-
+        System.debug('found ' + campaignIdsNeedingFixes.size() + ' Campaigns that are missing at least 1 of the mandatory Statuses');
         return campaignIdsNeedingFixes;
     }
 
@@ -82,7 +81,7 @@ public without sharing class SL_ProtectedCampaignService {
             return;
         }
 
-        Map<String, List<Protected_Campaign_Status__mdt>> protectedStatuses = getGroupedProtectedStatuses();
+        Map<String, List<Protected_Campaign_Status__mdt>> protectedStatuses = repo.getGroupedProtectedStatuses();
         Map<Id, CampaignMemberStatus> toUpdate = new Map<Id, CampaignMemberStatus>();
         List<CampaignMemberStatus> toInsert = new List<CampaignMemberStatus>();
         
