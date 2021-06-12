@@ -2,7 +2,7 @@ public without sharing virtual class SL_ProtectedCampaignRepository {
 
     public virtual Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
         List<Protected_Campaign_Status__mdt> protectedStatuses = [
-            SELECT Label, Campaign_Type__c, Original_Campaign_Member_Status__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
+            SELECT Label, Campaign_Type__c, New_Campaign_Member_Status__c, Is_Default__c, Is_Responded__c 
             FROM Protected_Campaign_Status__mdt
             ORDER BY Campaign_Type__c, Is_Default__c DESC, Is_Responded__c DESC];
 

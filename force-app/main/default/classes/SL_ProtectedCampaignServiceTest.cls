@@ -46,7 +46,6 @@ private class SL_ProtectedCampaignServiceTest {
             registered.DeveloperName = 'Webinar_Registered';
             registered.Label = 'Webinar-Registered';
             registered.Campaign_Type__c = 'Webinar';
-            registered.Original_Campaign_Member_Status__c = 'Responded';
             registered.New_Campaign_Member_Status__c = '1Registered';
             registered.Is_Default__c = true;
             registered.Is_Responded__c = false;
@@ -56,7 +55,6 @@ private class SL_ProtectedCampaignServiceTest {
             attended.DeveloperName = 'Webinar_Attended';
             attended.Label = 'Webinar-Attended';
             attended.Campaign_Type__c = 'Webinar';
-            attended.Original_Campaign_Member_Status__c = 'Sent';
             attended.New_Campaign_Member_Status__c = '2Attended';
             attended.Is_Default__c = false;
             attended.Is_Responded__c = true;

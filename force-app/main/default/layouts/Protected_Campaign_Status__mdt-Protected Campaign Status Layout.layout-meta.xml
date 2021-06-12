@@ -19,10 +19,6 @@
                 <field>Campaign_Type__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Original_Campaign_Member_Status__c</field>
-            </layoutItems>
-            <layoutItems>
                 <behavior>Required</behavior>
                 <field>New_Campaign_Member_Status__c</field>
             </layoutItems>

@@ -11,11 +11,6 @@
         <field>Protected_Campaign_Status__mdt.Is_Responded__c</field>
         <readable>false</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Protected_Campaign_Status__mdt.Original_Campaign_Member_Status__c</field>
-        <readable>false</readable>
-    </fieldPermissions>
     <layoutAssignments>
         <layout>Protected_Campaign_Status__mdt-Protected Campaign Status Layout</layout>
     </layoutAssignments>

@@ -154,7 +154,6 @@ private class SL_CampaignTriggerTest {
             registered.DeveloperName = 'Webinar_Registered';
             registered.Label = 'Webinar-Registered';
             registered.Campaign_Type__c = 'Webinar';
-            registered.Original_Campaign_Member_Status__c = 'Responded';
             registered.New_Campaign_Member_Status__c = '1Registered';
             registered.Is_Default__c = true;
             registered.Is_Responded__c = false;
@@ -164,7 +163,6 @@ private class SL_CampaignTriggerTest {
             attended.DeveloperName = 'Webinar_Attended';
             attended.Label = 'Webinar-Attended';
             attended.Campaign_Type__c = 'Webinar';
-            attended.Original_Campaign_Member_Status__c = 'Sent';
             attended.New_Campaign_Member_Status__c = '2Attended';
             attended.Is_Default__c = false;
             attended.Is_Responded__c = true;
@@ -203,7 +201,6 @@ private class SL_CampaignTriggerTest {
             onlyStatus.DeveloperName = 'Advertisement_Responded';
             onlyStatus.Label = 'Advertisement-Responded';
             onlyStatus.Campaign_Type__c = 'Advertisement';
-            onlyStatus.Original_Campaign_Member_Status__c = 'Responded';
             onlyStatus.New_Campaign_Member_Status__c = 'Responded';
             onlyStatus.Is_Default__c = true;
             onlyStatus.Is_Responded__c = true;
