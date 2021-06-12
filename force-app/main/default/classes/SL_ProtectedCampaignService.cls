@@ -1,8 +1,9 @@
 /***
  * Some reusable logic for this solution
  */
-public without sharing class SL_ProtectedCampaignService {
+public virtual without sharing class SL_ProtectedCampaignService {
     //singleton pattern
+    @TestVisible
     private static SL_ProtectedCampaignService instance;
     @TestVisible
     private SL_ProtectedCampaignRepository repo;
@@ -16,7 +17,7 @@ public without sharing class SL_ProtectedCampaignService {
         return instance;
     }
 
-    private SL_ProtectedCampaignService() { }
+    protected SL_ProtectedCampaignService() { }
 
     public List<Campaign> getCampaignsWithMemberStatuses(Set<Id> campaignIds) {
         System.debug('Start getCampaignsWithMemberStatuses');
@@ -35,7 +36,7 @@ public without sharing class SL_ProtectedCampaignService {
         return repo.getGroupedProtectedStatuses();
     }
 
-    public Set<Id> getCampaignsNeedingToBeFixed() {
+    public virtual Set<Id> getCampaignsNeedingToBeFixed() {
         System.debug('looking for Campaigns that might need to be fixed');
         Set<Id> campaignIdsNeedingFixes = new Set<Id>();
         Map<String, List<Protected_Campaign_Status__mdt>> protectedStatuses = repo.getGroupedProtectedStatuses();
@@ -70,7 +71,7 @@ public without sharing class SL_ProtectedCampaignService {
         return campaignIdsNeedingFixes;
     }
 
-    public void enforceProtectedStatusesForCampaigns(Set<Id> campaignIds) {
+    public virtual void enforceProtectedStatusesForCampaigns(Set<Id> campaignIds) {
         System.debug('Start enforceProtectedStatusesForCampaigns');
         List<Campaign> existingCampaigns = getCampaignsWithMemberStatuses(campaignIds);
 
