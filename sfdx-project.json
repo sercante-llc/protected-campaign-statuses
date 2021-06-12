@@ -1,12 +1,23 @@
 {
-  "packageDirectories": [
-    {
-      "path": "force-app",
-      "default": true
+    "packageDirectories": [
+        {
+            "path": "force-app",
+            "default": true
+        },
+        {
+            "path": "force-app/main/default",
+            "package": "Protected Campaign Member Statuses",
+            "versionName": "ver 1.0",
+            "versionNumber": "1.0.0.NEXT",
+            "default": false
+        }
+    ],
+    "name": "protected-campaign-statuses",
+    "namespace": "",
+    "sfdcLoginUrl": "https://login.salesforce.com",
+    "sourceApiVersion": "51.0",
+    "packageAliases": {
+        "Protected Campaign Member Statuses": "0Ho5G000000KyxrSAC",
+        "Protected Campaign Member Statuses@1.0.0-1": "04t5G000004C4QLQA0"
     }
-  ],
-  "name": "protected-campaign-statuses",
-  "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "51.0"
 }
