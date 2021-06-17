@@ -9,6 +9,7 @@ This Unlocked Package was developed for Marketing Admins who want to enforce the
 - [Pushing Code to a Sandbox org](#pushing-code-to-a-sandbox-org)
 - [Post-Install Configuration](#post-install-configuration)
 - [Installing into a Scratch Org](#installing-into-a-scratch-org)
+- [How it Works](#how-it-works)
 ## What You Get
 When deploying this package to your org, you will get:
 - 1 Custom Metadata Type (and page layout)
@@ -75,7 +76,7 @@ Follow this set of instructions if you want to deploy the solution into your org
 ## Post-Install Configuration
 
 1. Once installed, create some Protected Statuses
-    1. Login to Salesforce Lightning, go to Setup
+    1. Log in to Salesforce Lightning, go to Setup
     1. Navigate to Custom Metadata Types, click Manage Records for Protected Campaign Status
     1. To create your first ones, click New
     1. Fill in the various fields
@@ -153,3 +154,22 @@ Once you have provided your statuses, you are good to go. Give it a whirl by cre
     ```
 
 1. Continue with [Post-Install Configuration](#post-install-configuration)
+
+## How it Works
+Once everything is set up (above), Campaigns should maintain a consistent set of Campaign Member Statuses. Here's how we accomplish that.
+
+### New Campaign Created
+When a new Campaign is created, we check to see if the Type of Campaign is defined in any of the Protected Campaign Member Status records (the Custom Metadata Type that was set up earlier). If there is a match, the solution will:
+1. Automatically add a checkbox to the Campaign Custom Field "Has Protected Campaign Statuses".
+1. Automatically adjust the CampaignMemberStatus records to match all Protected Campaign Member Statuses expected
+
+### Editing a Protected Campaign Status
+For a Campaign that "Has Protected Campaign Statuses", when one of the CampaignMemberStatus records is edited we will double check all statuses of that Campaign to make sure that all Protected ones still exist. If there are any missing, they will be recreated almost instantly (you may need to refresh the page for them to show up if there's a delay).
+
+### Removing a Protected Campaign Status
+If a user removes a Protected Campaign Status, the Scheduled Job (that was created as part of [Post-Install Configuration](#post-install-configuration)) will search for Campaigns missing a Status and recreate it.
+
+## FAQ
+
+### Why Don't you just prevent people from messing around with Protected Statuses?
+We really wish we could. A "before update" and "before delete" APEX Trigger would be the simplest way to handle this. Unfortunately, APEX Triggers are not (yet) possible on CampaignMemberStatus records, so we end up having to fix it after-the-fact.
