@@ -32,6 +32,8 @@ public without sharing class SL_CampaignTriggerHandler {
         Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = protectedCampaignService.getGroupedProtectedStatuses();
 
         for(Campaign campaign : campaigns) {
+            if(campaign.isClone()) continue; //the rules for the cloned item should follow
+
             System.debug('Checking to see if the idiot checked it before hand');
             if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
                 System.debug('yup they gone done and did it');
@@ -55,7 +57,7 @@ public without sharing class SL_CampaignTriggerHandler {
         Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = protectedCampaignService.getGroupedProtectedStatuses();
         Set<Id> campaignIdsNeedingStatuses = new Set<Id>();
         for(Campaign campaign : campaigns) {
-            if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c && !campaign.isClone()) {
                 campaignIdsNeedingStatuses.add(campaign.Id);
             }
         }
