@@ -23,8 +23,8 @@ When deploying this package to your org, you will get:
 Setup is a bit more of a breeze when you install the Package.
 
 1. Install Unlocked Package (for Admins Only)
-    - [Product Installation URL](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t5G000004C4QQQA0)
-    - [Sandbox Installation URL](https://test.salesforce.com/packaging/installPackage.apexp?p0=04t5G000004C4QQQA0)
+    - [Product Installation URL](https://login.salesforce.com/packaging/installPackage.apexp?p0=04t5G000004C4UnQAK)
+    - [Sandbox Installation URL](https://test.salesforce.com/packaging/installPackage.apexp?p0=04t5G000004C4UnQAK)
 
 1. Continue with [Post-Install Configuration](#post-install-configuration)
 ## Pushing Code to a Sandbox org
