@@ -57,7 +57,7 @@ public without sharing class SL_CampaignTriggerHandler {
         Map<String, List<Protected_Campaign_Status__mdt>> groupedProtectedStatuses = protectedCampaignService.getGroupedProtectedStatuses();
         Set<Id> campaignIdsNeedingStatuses = new Set<Id>();
         for(Campaign campaign : campaigns) {
-            if(campaign.Has_Protected_Campaign_Member_Statuses__c && !campaign.isClone()) {
+            if(campaign.Has_Protected_Campaign_Member_Statuses__c) {
                 campaignIdsNeedingStatuses.add(campaign.Id);
             }
         }

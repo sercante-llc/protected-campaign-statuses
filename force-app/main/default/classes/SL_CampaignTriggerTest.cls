@@ -142,7 +142,31 @@ private class SL_CampaignTriggerTest {
         System.assertEquals('Once disabled, cannot be re-enabled.', result.getErrors().get(0).getMessage());
     }
 
+    @isTest(seeAllData=true)
+    static void shouldCreateStatusesForClonedCampaign() {
+        // arrange
+        SL_ProtectedCampaignService.getInstance().repo = new SL_WebinarMock();
+        Campaign original = new Campaign(
+            Name='MyTest Original', 
+            Type='Webinar');
+        insert original;
+        
+        Campaign updatedOriginal = [SELECT Name, Type, Has_Protected_Campaign_Member_Statuses__c FROM Campaign WHERE Id = :original.Id];
+        Campaign clone = updatedOriginal.clone();
 
+        Test.startTest();
+            System.debug('**** Start Test');
+            insert clone;
+            System.debug('**** End Test');
+        Test.stopTest();
+
+        //assert
+        List<CampaignMemberStatus> results = [
+            SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder 
+            FROM CampaignMemberStatus 
+            WHERE CampaignId = :clone.Id];
+        System.assertEquals(4, results.size());
+    }
 
     private class SL_WebinarMock extends SL_ProtectedCampaignRepository {
     
