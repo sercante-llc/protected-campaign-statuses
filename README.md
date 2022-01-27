@@ -10,6 +10,7 @@ This Unlocked Package was developed for Marketing Admins who want to enforce the
 - [Post-Install Configuration](#post-install-configuration)
 - [Installing into a Scratch Org](#installing-into-a-scratch-org)
 - [How it Works](#how-it-works)
+- [FAQ](#faq)
 ## What You Get
 When deploying this package to your org, you will get:
 - 1 Custom Metadata Type (and page layout)
@@ -173,3 +174,11 @@ If a user removes a Protected Campaign Status, the Scheduled Job (that was creat
 
 ### Why Don't you just prevent people from messing around with Protected Statuses?
 We really wish we could. A "before update" and "before delete" APEX Trigger would be the simplest way to handle this. Unfortunately, APEX Triggers are not (yet) possible on CampaignMemberStatus records, so we end up having to fix it after-the-fact.
+
+### I get APEX test errors after deploying the code. How can I fix them?
+If you have APEX tests which set up a Campaign record as part of the test, the functionality in this package will get called and might blow up. This is because how Salesforce internally treats the automatic generation of Campaign Member Status records when a new Campaign is created (it's weird).
+
+You have 2 options:
+
+1. For the purpose of the test, disable this functionality. You can accomplish this by adding `SL_CampaignTriggerHandler.bypass=true;` in your APEX Test set up.
+2. To actually see the records that Salesforce would create, you would need to have your test `@isTest(seeAllData=true)`. There are a lot of considerations with this approach, so please use wisely.
