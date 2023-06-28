@@ -6,7 +6,13 @@ private class SL_ProtectedCampaignServiceTest {
         //arrange
         Test.enableChangeDataCapture();
         SL_ProtectedCampaignService sut = SL_ProtectedCampaignService.getInstance();
-        sut.repo = new SL_WebinarMock();
+        sut.repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultStatus('Webinar','1Registered'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','2Attended'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','3Watched On Demand'),
+                SL_ProtectedCampaignServiceData.newStatus('Webinar','4Did Not Attend')
+        });
 
         Campaign campaign = new Campaign(
             Name='MyTest', 
@@ -34,53 +40,5 @@ private class SL_ProtectedCampaignServiceTest {
         System.assertEquals('2Attended', results.get(1).Label);
         System.assertEquals('3Watched On Demand', results.get(2).Label);
         System.assertEquals('4Did Not Attend', results.get(3).Label);
-    }
-
-    private class SL_WebinarMock extends SL_ProtectedCampaignRepository {
-    
-        public override Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-            System.debug('overriding actually getting MDTs from Salesforce, using hard coded Webinar MDTs');
-            Map<String, List<Protected_Campaign_Status__mdt>> response = new Map<String, List<Protected_Campaign_Status__mdt>>();
-            List<Protected_Campaign_Status__mdt> values = new List<Protected_Campaign_Status__mdt>();
-            Protected_Campaign_Status__mdt registered = new Protected_Campaign_Status__mdt();
-            registered.DeveloperName = 'Webinar_Registered';
-            registered.Label = 'Webinar-Registered';
-            registered.Campaign_Type__c = 'Webinar';
-            registered.New_Campaign_Member_Status__c = '1Registered';
-            registered.Is_Default__c = true;
-            registered.Is_Responded__c = false;
-            values.add(registered);
-
-            Protected_Campaign_Status__mdt attended = new Protected_Campaign_Status__mdt();
-            attended.DeveloperName = 'Webinar_Attended';
-            attended.Label = 'Webinar-Attended';
-            attended.Campaign_Type__c = 'Webinar';
-            attended.New_Campaign_Member_Status__c = '2Attended';
-            attended.Is_Default__c = false;
-            attended.Is_Responded__c = true;
-            values.add(attended);
-
-            Protected_Campaign_Status__mdt watchedOnDemand = new Protected_Campaign_Status__mdt();
-            watchedOnDemand.DeveloperName = 'Webinar_WatchedOnDemand';
-            watchedOnDemand.Label = 'Webinar-WatchedOnDemand';
-            watchedOnDemand.Campaign_Type__c = 'Webinar';
-            watchedOnDemand.New_Campaign_Member_Status__c = '3Watched On Demand';
-            watchedOnDemand.Is_Default__c = false;
-            watchedOnDemand.Is_Responded__c = true;
-            values.add(watchedOnDemand);
-
-            Protected_Campaign_Status__mdt didNotAttend = new Protected_Campaign_Status__mdt();
-            didNotAttend.DeveloperName = 'Webinar_DidNotAttend';
-            didNotAttend.Label = 'Webinar-DidNotAttend';
-            didNotAttend.Campaign_Type__c = 'Webinar';
-            didNotAttend.New_Campaign_Member_Status__c = '4Did Not Attend';
-            didNotAttend.Is_Default__c = false;
-            didNotAttend.Is_Responded__c = false;
-            values.add(didNotAttend);
-
-
-            response.put('Webinar', values);
-            return response;
-        }
     }
 }

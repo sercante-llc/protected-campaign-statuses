@@ -25,7 +25,7 @@ public virtual without sharing class SL_ProtectedCampaignService {
             SELECT ID, Name, Type, (
                 SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder 
                 FROM CampaignMemberStatuses
-                ORDER BY IsDefault DESC
+                ORDER BY IsDefault DESC, HasResponded DESC
             )
             FROM Campaign
             WHERE Id IN :campaignIds

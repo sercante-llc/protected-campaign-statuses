@@ -87,69 +87,74 @@ public without sharing class SL_CampaignTriggerHandler {
             CampaignMemberStatus existingResponded = cmsList.get(1);
 
             List<Protected_Campaign_Status__mdt> expectedStatuses = groupedProtectedStatuses.get(campaign.Type);
-            if(expectedStatuses.size()==1) {
-                Protected_Campaign_Status__mdt expectedStatus = expectedStatuses.get(0);
-                System.debug('There is only 1 expected CampaignMemberStatus, so it is easy to set this up');
-                //we need to be careful about which record we keep, so that we can safely have only 1 record AND make
-                //sure it is Default & Responded.
+            Integer respondedCount=0;
+            Integer defaultCount=0;
+            Integer totalCount = expectedStatuses.size();
+            Boolean respondedIsAlsoDefault=false;
 
-                CampaignMemberStatus desiredRecord = existingDefault;
-                CampaignMemberStatus deletedRecord = existingResponded;
+            for(Protected_Campaign_Status__mdt expected : expectedStatuses) {
+                if(expected.Is_Default__c) defaultCount++;
+                if(expected.Is_Responded__c) respondedCount++;
+                if(expected.Is_Default__c && expected.Is_Responded__c) respondedIsAlsoDefault=true;
+            }
+            // a little validation
+            if(defaultCount != 1) campaign.addError('There should be only 1 expected default status, please adjust Protected Campaign Member Status configuration');
+            if(respondedCount < 0) campaign.addError('There should be at least 1 responded status, please adjust Protected Campaign Member Status configuration');
+            Integer sortOrder=3;
 
-                if(expectedStatus.New_Campaign_Member_Status__c == 'Responded') {
-                    //now if the only status we want to keep is Responded, we can't keep the "default" record,
-                    //so we will keep the old "Responded" record and just set it as default
-                    desiredRecord = existingResponded;
-                    desiredRecord.IsDefault = true;
+            for(Protected_Campaign_Status__mdt expected: expectedStatuses) {
+                System.debug('Checking to see what we need to do with expected status of ' + expected.Label);
+                if(totalCount==1) {
+                    System.debug('There is only 1 expected CampaignMemberStatus, so it is easy to set this up');
+                    
+                    existingResponded.IsDefault = true;
+                    existingResponded.Label = expected.New_Campaign_Member_Status__c;
+                    System.debug(existingResponded);
+                    toUpdate.add(existingResponded);
+                    toDelete.add(existingDefault);
+                    break; // there are no more expected statuses, break out of the for loop
+                }
 
-                    deletedRecord = existingDefault;
+                if(totalCount>1 && respondedIsAlsoDefault && toUpdate.isEmpty()) {
+                    System.debug('There is more than 1 expected status, and this status is both responded & default');
+                    existingResponded.isDefault=true;
+                    existingResponded.Label = expected.New_Campaign_Member_Status__c;
+                    existingResponded.HasResponded = true;
+                    System.debug(existingResponded);
+                    toUpdate.add(existingResponded);
+                    continue;//we want to process the next expected status
+                }
+                else if(totalCount > 1 && toUpdate.isEmpty()) {
+                    System.debug('There is more than 1 expected status, and this one is default and not responded');
+                    existingDefault.Label = expected.New_Campaign_Member_Status__c;
+                    System.debug(existingDefault);
+                    toUpdate.add(existingDefault);
+                    continue;//we want to process the next expected status
+                }
+
+                // this record doesn't fall into either of the special scenarios above
+                // but may be impacted by one of them
+                System.debug('It is not the default status, checking to see what we need to do');
+                if(toUpdate.size()==1) { // the default record has already been processed
+                    System.debug('We will update the other pre-made status to match');
+                    CampaignMemberStatus targetRecord = respondedIsAlsoDefault?existingDefault:existingResponded;
+                    targetRecord.Label = expected.New_Campaign_Member_Status__c;
+                    targetRecord.HasResponded = expected.Is_Responded__c;
+                    targetRecord.IsDefault=false;
+                    
+                    System.debug(targetRecord);
+                    toUpdate.add(targetRecord);
                 }
                 else {
-                    desiredRecord.HasResponded = true;
-                    desiredRecord.Label = expectedStatus.New_Campaign_Member_Status__c;
-                }
-
-                toUpdate.add(desiredRecord);
-                toDelete.add(deletedRecord);
-            }
-            else {
-                System.debug('There is more than 1 expected CampaignMemberStatus, so we need to figure things out');
-                //First, process the Default Status
-                Boolean processedSent = false;
-                Integer sortOrder=3;
-                for(Protected_Campaign_Status__mdt expected: expectedStatuses) {
-                    System.debug('Checking to see what we need to do with expected status of ' + expected.Label);
-                    if(expected.Is_Default__c) {
-                        System.debug('It is the default status, updating the system-generated default status to match');
-                        existingDefault.Label = expected.New_Campaign_Member_Status__c;
-                        existingDefault.HasResponded = expected.Is_Responded__c;
-
-                        System.debug(existingDefault);
-                        toUpdate.add(existingDefault);
-                    }
-                    else {
-                        System.debug('It is not the default status, checking to see what we need to do');
-                        if(!processedSent) {
-                            System.debug('We will update the existing Sent status to match');
-                            existingResponded.Label = expected.New_Campaign_Member_Status__c;
-                            existingResponded.HasResponded = expected.Is_Responded__c;
-                            
-                            System.debug(existingResponded);
-                            toUpdate.add(existingResponded);
-                            processedSent = true;
-                        }
-                        else {
-                            System.debug('We need to create a new Status');
-                            CampaignMemberStatus newStatus = new CampaignMemberStatus(
-                                CampaignId=campaign.Id, 
-                                Label=expected.New_Campaign_Member_Status__c,
-                                HasResponded=expected.Is_Responded__c,
-                                SortOrder=sortOrder++);
-                            
-                                System.debug(newStatus);
-                            toInsert.add(newStatus);
-                        }
-                    }
+                    System.debug('We need to create a new Status');
+                    CampaignMemberStatus newStatus = new CampaignMemberStatus(
+                        CampaignId=campaign.Id, 
+                        Label=expected.New_Campaign_Member_Status__c,
+                        HasResponded=expected.Is_Responded__c,
+                        SortOrder=sortOrder++);
+                    
+                    System.debug(newStatus);
+                    toInsert.add(newStatus);
                 }
             }
         }

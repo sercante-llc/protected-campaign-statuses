@@ -21,7 +21,13 @@ private class SL_CampaignTriggerTest {
     @isTest(seeAllData=true)
     static void shouldMakeCampaignProtectedIfItHasTheRightType() {
         // arrange
-        SL_ProtectedCampaignService.getInstance().repo = new SL_WebinarMock();
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultStatus('Webinar','1Registered'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','2Attended'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','3Watched On Demand'),
+                SL_ProtectedCampaignServiceData.newStatus('Webinar','4Did Not Attend')
+        });
         Campaign record = new Campaign(
             Name='MyTest', 
             Type='Webinar');
@@ -59,7 +65,13 @@ private class SL_CampaignTriggerTest {
     @isTest(seeAllData=true)
     static void shouldCreateAllTheRightStatusesForSpecifiedType() {
         // arrange
-        SL_ProtectedCampaignService.getInstance().repo = new SL_WebinarMock();
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultStatus('Webinar','1Registered'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','2Attended'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','3Watched On Demand'),
+                SL_ProtectedCampaignServiceData.newStatus('Webinar','4Did Not Attend')
+        });
         Campaign record = new Campaign(
             Name='MyTest', 
             Type='Webinar');
@@ -79,9 +91,12 @@ private class SL_CampaignTriggerTest {
 
 
     @isTest(seeAllData=true)
-    static void shouldCreateAllTheRightStatusesInSingleStatusType() {
+    static void shouldCreateAllTheRightStatusesInSingleStatusTypeResponded() {
         // arrange
-        SL_ProtectedCampaignService.getInstance().repo = new SL_AdvertisementMock();
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultAndRespondedStatus('Advertisement','Responded')
+        });
         Campaign record = new Campaign(
             Name='MyTest', 
             Type='Advertisement');
@@ -98,11 +113,40 @@ private class SL_CampaignTriggerTest {
             WHERE CampaignId = :record.Id];
         System.assertEquals(1, results.size());
     }
+    
+    @isTest(seeAllData=true)
+    static void shouldCreateAllTheRightStatusesWhenOnlyOneIsDefaultAndResponded() {
+        // arrange
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultAndRespondedStatus('Interview','1Do Not Contact'),
+                SL_ProtectedCampaignServiceData.newStatus('Interview','2Responded to Research/Survey'),
+                SL_ProtectedCampaignServiceData.newStatus('Interview','3Screened Out')
+        });
+        Campaign record = new Campaign(
+            Name='MyTest', 
+            Type='Interview');
+
+        //act
+        Test.startTest();
+            insert record;
+        Test.stopTest();
+
+        //assert
+        List<CampaignMemberStatus> results = [
+            SELECT Id, Label, CampaignId, HasResponded, IsDefault, SortOrder 
+            FROM CampaignMemberStatus 
+            WHERE CampaignId = :record.Id];
+        System.assertEquals(3, results.size());
+    }
 
     @isTest(seeAllData=true)
     static void shouldPreventChangingTypeForProtectedCampaign() {
         //arrange
-        SL_ProtectedCampaignService.getInstance().repo = new SL_AdvertisementMock();
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultAndRespondedStatus('Advertisement','Blasted')
+        });
         Campaign record = new Campaign(
             Name='MyTest', 
             Type='Advertisement');
@@ -145,7 +189,13 @@ private class SL_CampaignTriggerTest {
     @isTest(seeAllData=true)
     static void shouldCreateStatusesForClonedCampaign() {
         // arrange
-        SL_ProtectedCampaignService.getInstance().repo = new SL_WebinarMock();
+        SL_ProtectedCampaignService.getInstance().repo = new SL_ProtectedCampaignServiceData.SL_WebinarMock(
+            new List<Protected_Campaign_Status__mdt> {
+                SL_ProtectedCampaignServiceData.newDefaultStatus('Webinar','1Registered'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','2Attended'),
+                SL_ProtectedCampaignServiceData.newRespondedStatus('Webinar','3Watched On Demand'),
+                SL_ProtectedCampaignServiceData.newStatus('Webinar','4Did Not Attend')
+        });
         Campaign original = new Campaign(
             Name='MyTest Original', 
             Type='Webinar');
@@ -166,72 +216,5 @@ private class SL_CampaignTriggerTest {
             FROM CampaignMemberStatus 
             WHERE CampaignId = :clone.Id];
         System.assertEquals(4, results.size());
-    }
-
-    private class SL_WebinarMock extends SL_ProtectedCampaignRepository {
-    
-        public override Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-            System.debug('overriding actually getting MDTs from Salesforce, using hard coded Webinar MDTs');
-            Map<String, List<Protected_Campaign_Status__mdt>> response = new Map<String, List<Protected_Campaign_Status__mdt>>();
-            List<Protected_Campaign_Status__mdt> values = new List<Protected_Campaign_Status__mdt>();
-            Protected_Campaign_Status__mdt registered = new Protected_Campaign_Status__mdt();
-            registered.DeveloperName = 'Webinar_Registered';
-            registered.Label = 'Webinar-Registered';
-            registered.Campaign_Type__c = 'Webinar';
-            registered.New_Campaign_Member_Status__c = '1Registered';
-            registered.Is_Default__c = true;
-            registered.Is_Responded__c = false;
-            values.add(registered);
-
-            Protected_Campaign_Status__mdt attended = new Protected_Campaign_Status__mdt();
-            attended.DeveloperName = 'Webinar_Attended';
-            attended.Label = 'Webinar-Attended';
-            attended.Campaign_Type__c = 'Webinar';
-            attended.New_Campaign_Member_Status__c = '2Attended';
-            attended.Is_Default__c = false;
-            attended.Is_Responded__c = true;
-            values.add(attended);
-
-            Protected_Campaign_Status__mdt watchedOnDemand = new Protected_Campaign_Status__mdt();
-            watchedOnDemand.DeveloperName = 'Webinar_WatchedOnDemand';
-            watchedOnDemand.Label = 'Webinar-WatchedOnDemand';
-            watchedOnDemand.Campaign_Type__c = 'Webinar';
-            watchedOnDemand.New_Campaign_Member_Status__c = '3Watched On Demand';
-            watchedOnDemand.Is_Default__c = false;
-            watchedOnDemand.Is_Responded__c = true;
-            values.add(watchedOnDemand);
-
-            Protected_Campaign_Status__mdt didNotAttend = new Protected_Campaign_Status__mdt();
-            didNotAttend.DeveloperName = 'Webinar_DidNotAttend';
-            didNotAttend.Label = 'Webinar-DidNotAttend';
-            didNotAttend.Campaign_Type__c = 'Webinar';
-            didNotAttend.New_Campaign_Member_Status__c = '4Did Not Attend';
-            didNotAttend.Is_Default__c = false;
-            didNotAttend.Is_Responded__c = false;
-            values.add(didNotAttend);
-
-
-            response.put('Webinar', values);
-            return response;
-        }
-    }
-    private class SL_AdvertisementMock extends SL_ProtectedCampaignRepository {
-    
-        public override Map<String, List<Protected_Campaign_Status__mdt>> getGroupedProtectedStatuses() {
-            System.debug('overriding actually getting MDTs from Salesforce, using hard coded Advertisement MDTs');
-            Map<String, List<Protected_Campaign_Status__mdt>> response = new Map<String, List<Protected_Campaign_Status__mdt>>();
-            List<Protected_Campaign_Status__mdt> values = new List<Protected_Campaign_Status__mdt>();
-            Protected_Campaign_Status__mdt onlyStatus = new Protected_Campaign_Status__mdt();
-            onlyStatus.DeveloperName = 'Advertisement_Responded';
-            onlyStatus.Label = 'Advertisement-Responded';
-            onlyStatus.Campaign_Type__c = 'Advertisement';
-            onlyStatus.New_Campaign_Member_Status__c = 'Responded';
-            onlyStatus.Is_Default__c = true;
-            onlyStatus.Is_Responded__c = true;
-            values.add(onlyStatus);
-
-            response.put('Advertisement', values);
-            return response;
-        }
     }
 }
