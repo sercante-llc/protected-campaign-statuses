@@ -1,15 +1,11 @@
 {
     "packageDirectories": [
         {
-            "path": "force-app",
-            "default": true
-        },
-        {
             "path": "force-app/main/default",
             "package": "Protected Campaign Member Statuses",
-            "versionName": "ver 1.3",
+            "versionName": "1.3.0",
             "versionNumber": "1.3.0.NEXT",
-            "default": false
+            "default": true
         }
     ],
     "name": "protected-campaign-statuses",
